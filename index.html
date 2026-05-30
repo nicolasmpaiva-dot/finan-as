@@ -465,7 +465,7 @@ body {
 <div class="toast" id="toast"></div>
 
 <script>
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwwMm8njnf8G-HGjKFIbu2GEer7jRfbcWBZL-hs8BxkE1I8ZT9iExvwFoBnUfcEMZLDFw/exec';
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwPHzf2IZcVVb6UxHib71CddLbU4DGn-C3OX5iJeSPFLUVzHmig5JyTNlN1GJ5sA82KhQ/exec';
 
 const WEEKS = [
   { id:'w1', label:'04/05 – 10/05' },
@@ -607,11 +607,19 @@ async function seedSheets() {
 }
 
 async function postToSheets(exp) {
-  await fetch(SHEETS_URL, {
-    method:'POST', mode:'no-cors',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({id:exp.id,semana:exp.week,data:exp.date,valor:exp.valor,nome:exp.nome,cat:exp.cat,who:exp.who})
+  const params = new URLSearchParams({
+    action: 'save',
+    id: exp.id,
+    semana: exp.week,
+    data: exp.date,
+    valor: exp.valor,
+    nome: exp.nome,
+    cat: exp.cat,
+    who: exp.who
   });
+  const r = await fetch(SHEETS_URL + '?' + params.toString());
+  if (!r.ok) throw new Error('sheets error');
+  return r.json();
 }
 
 async function flushPending() {
