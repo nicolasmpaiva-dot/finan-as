@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Finanças.</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f2f0eb;
+  --surface: #ffffff;
+  --surface2: #f7f5f0;
+  --line: #e8e4dc;
+  --ink: #1c1c1e;
+  --ink2: #3a3a3c;
+  --muted: #8e8e93;
+  --dim: #c7c7cc;
+
+  /* card escuro — segue identidade clean */
+  --dark-card: #ffffff;
+  --dark-text: #1c1c1e;
+  --dark-sub: #8e8e93;
+  --dark-val: #1c1c1e;
+
+  /* botão principal */
+  --btn-bg: #3a3a3c;
+  --btn-text: #ffffff;
+
+  /* pessoas */
+  --nico: #d64045;
+  --nico-pale: #fdecea;
+  --zeca: #2563a8;
+  --zeca-pale: #e8f0fb;
+
+  /* categorias pastel */
+  --food-bg: #fef3e2;    --food-c: #c47d1a;
+  --merc-bg: #e8f5ec;    --merc-c: #2d7a4f;
+  --tran-bg: #e8f0fb;    --tran-c: #2563a8;
+  --laze-bg: #f0eafa;    --laze-c: #6d3fc0;
+  --vini-bg: #fef9e7;    --vini-c: #a07c1a;
+
+  --green: #2d7a4f;
+  --green-pale: #e8f5ec;
+  --red: #d64045;
+  --red-pale: #fdecea;
+
+  --r: 16px;
+  --r-sm: 12px;
+  --r-xs: 8px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  max-width: 430px;
+  margin: 0 auto;
+  padding-bottom: 90px;
+}
+
+/* ── HEADER ── */
+.header {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 16px 18px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo {
+  font-size: 20px; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.5px;
+}
+.sync-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--muted); font-weight: 500;
+}
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); transition: background .3s; }
+.sync-dot.ok { background: var(--green); }
+.sync-dot.err { background: var(--red); }
+.sync-dot.loading { background: #f59e0b; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── WEEK STRIP ── */
+.week-strip {
+  display: flex; overflow-x: auto; gap: 6px;
+  padding: 12px 18px; scrollbar-width: none;
+  border-bottom: 1px solid var(--line);
+}
+.week-strip::-webkit-scrollbar { display: none; }
+.week-pill {
+  flex-shrink: 0; padding: 7px 14px; border-radius: 20px;
+  border: 1.5px solid var(--line); background: none;
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+  color: var(--muted); cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.week-pill.active {
+  border-color: var(--ink); background: var(--ink);
+  color: white; font-weight: 600;
+}
+
+/* ── LOADING ── */
+.loading-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 200; gap: 14px;
+}
+.loading-logo { font-size: 28px; font-weight: 700; color: var(--ink); letter-spacing: -0.5px; }
+.loading-bar { width: 140px; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.loading-fill { height: 100%; background: var(--ink); border-radius: 2px; animation: loadAnim 1.4s ease-in-out infinite; }
+@keyframes loadAnim { 0%{width:0;margin-left:0} 50%{width:100%;margin-left:0} 100%{width:0;margin-left:100%} }
+.loading-txt { font-size: 13px; color: var(--muted); font-weight: 400; }
+
+/* ── BALANCE CARD (dark) ── */
+.balance-wrap { padding: 16px 18px 0; }
+.balance-card {
+  background: var(--dark-card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 20px 22px;
+}
+.bal-label {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.8px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+}
+.bal-amount {
+  font-size: 38px; font-weight: 700; letter-spacing: -1.5px;
+  color: var(--dark-val); line-height: 1; margin-bottom: 18px;
+}
+.bal-amount.negative { color: #ff6b6b; }
+.bal-row { display: flex; gap: 24px; }
+.bal-stat { display: flex; flex-direction: column; gap: 3px; }
+.bal-stat-label { font-size: 11px; color: var(--dark-sub); }
+.bal-stat-val { font-size: 14px; font-weight: 600; color: var(--dark-text); }
+
+/* ── SPLIT ── */
+.split-wrap { padding: 10px 18px 0; }
+.split-row { display: flex; gap: 8px; }
+.split-card {
+  flex: 1; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--r-sm); padding: 14px;
+}
+.split-name { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 5px; }
+.split-name.nico { color: var(--nico); }
+.split-name.zeca { color: var(--zeca); }
+.split-amount { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: var(--ink); }
+
+/* ── CATS ── */
+.cats-wrap { padding: 14px 18px 0; }
+.section-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+}
+.cats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.cat-card {
+  border-radius: var(--r-sm); padding: 14px;
+  position: relative; overflow: hidden; cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: transform .1s;
+}
+.cat-card:active { transform: scale(.97); }
+.cat-card.vini { grid-column: 1 / -1; }
+
+.cat-card.food       { background: var(--food-bg); }
+.cat-card.mercado    { background: var(--merc-bg); }
+.cat-card.transporte { background: var(--tran-bg); }
+.cat-card.lazer      { background: var(--laze-bg); }
+.cat-card.vini-cat   { background: var(--vini-bg); }
+
+.cat-icon-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cat-shape { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.cat-card.food       .cat-shape { background: rgba(196,125,26,.15); }
+.cat-card.mercado    .cat-shape { background: rgba(45,122,79,.15); }
+.cat-card.transporte .cat-shape { background: rgba(37,99,168,.15); }
+.cat-card.lazer      .cat-shape { background: rgba(109,63,192,.15); }
+.cat-card.vini-cat   .cat-shape { background: rgba(160,124,26,.15); }
+
+.cat-saldo-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+}
+.cat-saldo-badge.pos { background: rgba(45,122,79,.15); color: var(--green); }
+.cat-saldo-badge.neg { background: rgba(214,64,69,.15); color: var(--red); }
+
+.cat-name {
+  font-size: 13px; font-weight: 700; margin-bottom: 4px;
+}
+.cat-card.food       .cat-name { color: var(--food-c); }
+.cat-card.mercado    .cat-name { color: var(--merc-c); }
+.cat-card.transporte .cat-name { color: var(--tran-c); }
+.cat-card.lazer      .cat-name { color: var(--laze-c); }
+.cat-card.vini-cat   .cat-name { color: var(--vini-c); }
+
+.cat-spent { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--ink); margin-bottom: 4px; }
+.cat-quota { font-size: 11px; color: var(--muted); }
+
+.cat-progress-bg { height: 3px; background: rgba(0,0,0,.08); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.cat-progress-fill { height: 100%; border-radius: 2px; transition: width .5s ease; }
+.cat-card.food       .cat-progress-fill { background: var(--food-c); }
+.cat-card.mercado    .cat-progress-fill { background: var(--merc-c); }
+.cat-card.transporte .cat-progress-fill { background: var(--tran-c); }
+.cat-card.lazer      .cat-progress-fill { background: var(--laze-c); }
+.cat-card.vini-cat   .cat-progress-fill { background: var(--vini-c); }
+
+/* ── EXPENSES ── */
+.expenses-wrap { padding: 14px 18px 0; }
+.expense-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  margin-bottom: 7px; animation: fadeUp .2s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.exp-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.exp-info { flex: 1; min-width: 0; }
+.exp-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exp-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.exp-right { text-align: right; flex-shrink: 0; }
+.exp-val { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.exp-who { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
+.exp-who.nico { color: var(--nico); }
+.exp-who.zeca { color: var(--zeca); }
+
+/* ── MONTHLY ── */
+.monthly-wrap { padding: 14px 18px 0; }
+.month-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.mscard {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 14px;
+}
+.mscard-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5px; font-weight: 500; }
+.mscard-val { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+.mscard.nico-card { border-left: 3px solid var(--nico); }
+.mscard.zeca-card { border-left: 3px solid var(--zeca); }
+
+.credit-card-full {
+  background: var(--green-pale); border: 1px solid #b3dfc5;
+  border-radius: var(--r-sm); padding: 14px; margin-bottom: 12px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.credit-label { font-size: 12px; color: var(--green); font-weight: 600; }
+.credit-val { font-size: 22px; font-weight: 700; color: var(--green); letter-spacing: -0.5px; }
+
+.cat-month-row {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 13px 14px;
+  margin-bottom: 7px; display: flex; align-items: center; gap: 12px;
+}
+.cml-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cml-info { flex: 1; }
+.cml-name { font-size: 13px; font-weight: 600; }
+.cml-bar-wrap { height: 4px; background: var(--surface2); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.cml-bar { height: 100%; border-radius: 2px; }
+.cml-right { text-align: right; flex-shrink: 0; }
+.cml-val { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cml-credit { font-size: 11px; font-weight: 600; margin-top: 2px; }
+.cml-credit.pos { color: var(--green); }
+.cml-credit.neg { color: var(--red); }
+.cml-credit.neu { color: var(--muted); }
+
+/* ── SETTINGS ── */
+.settings-wrap { padding: 14px 18px 0; }
+.settings-group { margin-bottom: 22px; }
+.sg-title { font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.settings-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.settings-row:last-child { border-bottom: none; }
+.sr-label { font-size: 14px; font-weight: 500; }
+.sr-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.sr-input {
+  width: 100px; text-align: right;
+  background: var(--surface2); border: 1px solid var(--line);
+  border-radius: var(--r-xs); padding: 6px 10px;
+  font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
+  color: var(--ink); outline: none; transition: border-color .15s;
+}
+.sr-input:focus { border-color: var(--ink); }
+.save-btn {
+  width: 100%; padding: 14px; background: var(--btn-bg); border: none;
+  color: var(--btn-text); font-family: 'Inter', sans-serif;
+  font-size: 15px; font-weight: 600; border-radius: var(--r-sm);
+  cursor: pointer; margin-top: 10px; transition: opacity .2s;
+}
+.save-btn:active { opacity: .8; }
+.action-btn {
+  width: 100%; padding: 14px; background: var(--surface);
+  border: 1px solid var(--line); color: var(--ink);
+  font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
+  border-radius: var(--r-sm); cursor: pointer; margin-top: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: border-color .15s;
+}
+.action-btn:hover { border-color: var(--ink); }
+
+/* ── FAB ── */
+.fab {
+  position: fixed; bottom: 78px; left: 50%; transform: translateX(-50%);
+  width: calc(100% - 36px); max-width: 394px; padding: 16px;
+  background: var(--btn-bg); border: none; border-radius: var(--r-sm);
+  font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600;
+  color: var(--btn-text); cursor: pointer; z-index: 40;
+  box-shadow: 0 4px 20px rgba(0,0,0,.15);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform .1s;
+}
+.fab:active { transform: translateX(-50%) scale(.97); }
+
+/* ── NAV ── */
+.nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px; background: var(--bg);
+  border-top: 1px solid var(--line);
+  display: flex; padding: 8px 0 16px; z-index: 50;
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: none; border: none; color: var(--dim);
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500;
+  cursor: pointer; transition: color .15s;
+}
+.nav-btn.active { color: var(--ink); }
+.nav-icon { font-size: 20px; line-height: 1; }
+
+/* ── MODAL ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  backdrop-filter: blur(8px); z-index: 200;
+  display: none; align-items: flex-end; justify-content: center;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--bg); border-radius: 20px 20px 0 0;
+  padding: 22px 18px 40px; width: 100%; max-width: 430px;
+  animation: slideUp .28s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-handle { width: 36px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 20px; }
+.fg { margin-bottom: 14px; }
+.fl { font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 7px; }
+.fi {
+  width: 100%; background: var(--surface); border: 1px solid var(--line);
+  color: var(--ink); padding: 13px 14px; border-radius: var(--r-sm);
+  font-family: 'Inter', sans-serif; font-size: 16px; outline: none;
+  -webkit-appearance: none; transition: border-color .15s;
+}
+.fi:focus { border-color: var(--ink); }
+.fi.big { font-size: 32px; font-weight: 700; text-align: center; letter-spacing: -1px; }
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--line);
+  background: var(--surface); font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.chip.on { border-color: var(--ink); background: var(--ink); color: white; font-weight: 600; }
+.chip.on.nico { border-color: var(--nico); background: var(--nico-pale); color: var(--nico); }
+.chip.on.zeca { border-color: var(--zeca); background: var(--zeca-pale); color: var(--zeca); }
+.submit {
+  width: 100%; padding: 15px; background: var(--btn-bg); border: none;
+  color: var(--btn-text); font-family: 'Inter', sans-serif;
+  font-size: 16px; font-weight: 600; border-radius: var(--r-sm);
+  cursor: pointer; margin-top: 8px; transition: opacity .2s;
+}
+.submit:disabled { opacity: .4; cursor: not-allowed; }
+.sync-hint { text-align: center; font-size: 11px; color: var(--muted); margin-top: 10px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; top: 16px; left: 50%;
+  transform: translateX(-50%) translateY(-60px);
+  background: var(--ink); color: white;
+  padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; font-weight: 500; z-index: 999;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none; white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── EMPTY ── */
+.empty { text-align: center; padding: 36px 20px; color: var(--dim); }
+.empty-icon { font-size: 36px; margin-bottom: 8px; }
+.empty-txt { font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-logo">Finanças.</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <div class="loading-txt">Carregando dados…</div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">Finanças.</div>
+  <div class="sync-status">
+    <div class="sync-dot" id="syncDot"></div>
+    <span id="syncLabel">—</span>
+  </div>
+</header>
+
+<!-- WEEK STRIP -->
+<div class="week-strip" id="weekStrip"></div>
+
+<!-- CONTENT -->
+<div id="content"></div>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="openModal()">+ Registrar gasto</button>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" id="navSemana" onclick="setPage('semana')"><span class="nav-icon">📅</span>Semana</button>
+  <button class="nav-btn" id="navMes"    onclick="setPage('mes')"><span class="nav-icon">📊</span>Mês</button>
+  <button class="nav-btn" id="navConfig" onclick="setPage('config')"><span class="nav-icon">⚙️</span>Ajustes</button>
+</nav>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="bgClose(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Novo gasto</div>
+    <div class="fg">
+      <label class="fl">Valor (R$)</label>
+      <input class="fi big" type="number" id="mValor" placeholder="0,00" inputmode="decimal" step="0.01">
+    </div>
+    <div class="fg">
+      <label class="fl">Estabelecimento</label>
+      <input class="fi" type="text" id="mNome" placeholder="Ex: São Luiz, Uber…">
+    </div>
+    <div class="fg">
+      <label class="fl">Semana</label>
+      <div class="chips" id="mWeekChips"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Categoria</label>
+      <div class="chips" id="mCatChips">
+        <button class="chip" onclick="selCat('food')">🍽 Food</button>
+        <button class="chip" onclick="selCat('mercado')">🛒 Mercado</button>
+        <button class="chip" onclick="selCat('transporte')">🚗 Transporte</button>
+        <button class="chip" onclick="selCat('lazer')">🎉 Lazer</button>
+        <button class="chip" onclick="selCat('vini')">🐾 Vini</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">Quem pagou?</label>
+      <div class="chips">
+        <button class="chip" id="chipNico" onclick="selWho('Nico')">Nico</button>
+        <button class="chip" id="chipZeca" onclick="selWho('Zeca')">Zeca</button>
+      </div>
+    </div>
+    <button class="submit" id="submitBtn" onclick="addExpense()">Salvar</button>
+    <div class="sync-hint">☁ Sincroniza com Google Sheets</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwwMm8njnf8G-HGjKFIbu2GEer7jRfbcWBZL-hs8BxkE1I8ZT9iExvwFoBnUfcEMZLDFw/exec';
+
+const WEEKS = [
+  { id:'w1', label:'04/05 – 10/05' },
+  { id:'w2', label:'11/05 – 17/05' },
+  { id:'w3', label:'18/05 – 24/05' },
+  { id:'w4', label:'25/05 – 31/05' },
+];
+
+const CATS = {
+  food:       { name:'Food',       icon:'🍽', cls:'food',       color:'#c47d1a' },
+  mercado:    { name:'Mercado',    icon:'🛒', cls:'mercado',    color:'#2d7a4f' },
+  transporte: { name:'Transporte', icon:'🚗', cls:'transporte', color:'#2563a8' },
+  lazer:      { name:'Lazer',      icon:'🎉', cls:'lazer',      color:'#6d3fc0' },
+  vini:       { name:'Vini',       icon:'🐾', cls:'vini-cat',   color:'#a07c1a' },
+};
+
+const CAT_BG = {
+  food:'#fef3e2', mercado:'#e8f5ec', transporte:'#e8f0fb', lazer:'#f0eafa', vini:'#fef9e7'
+};
+
+const SEED_DATA = [
+  {id:'s1', week:'w1',date:'2026-05-05',valor:45.4,  nome:'Track & Field',          cat:'food',       who:'Zeca'},
+  {id:'s2', week:'w1',date:'2026-05-09',valor:18,    nome:'Água – Cinema',           cat:'food',       who:'Zeca'},
+  {id:'s3', week:'w1',date:'2026-05-10',valor:54,    nome:'Empório',                cat:'food',       who:'Zeca'},
+  {id:'s4', week:'w1',date:'2026-05-10',valor:242,   nome:'Despedida Preta',        cat:'food',       who:'Nico'},
+  {id:'s5', week:'w2',date:'2026-05-16',valor:113,   nome:'Almoço – La Raclette',   cat:'food',       who:'Zeca'},
+  {id:'s6', week:'w2',date:'2026-05-17',valor:125.17,nome:'Brunch – East Coast',    cat:'food',       who:'Nico'},
+  {id:'s7', week:'w3',date:'2026-05-23',valor:47,    nome:'Havanna',                cat:'food',       who:'Zeca'},
+  {id:'s8', week:'w3',date:'2026-05-24',valor:139.4, nome:'Matina',                 cat:'food',       who:'Zeca'},
+  {id:'s9', week:'w4',date:'2026-05-26',valor:204.6, nome:'Painê',                  cat:'food',       who:'Zeca'},
+  {id:'s10',week:'w1',date:'2026-05-04',valor:266.78,nome:'São Luiz',               cat:'mercado',    who:'Zeca'},
+  {id:'s11',week:'w1',date:'2026-05-06',valor:87.05, nome:'São Luiz',               cat:'mercado',    who:'Zeca'},
+  {id:'s12',week:'w1',date:'2026-05-07',valor:16.25, nome:'Cometa – Saco de Lixo',  cat:'mercado',    who:'Nico'},
+  {id:'s13',week:'w1',date:'2026-05-07',valor:13.98, nome:'Mini Do Povo',           cat:'mercado',    who:'Zeca'},
+  {id:'s14',week:'w1',date:'2026-05-09',valor:170.4, nome:'Açougue',               cat:'mercado',    who:'Zeca'},
+  {id:'s15',week:'w1',date:'2026-05-09',valor:77.12, nome:'São Luiz',               cat:'mercado',    who:'Zeca'},
+  {id:'s16',week:'w1',date:'2026-05-04',valor:51,    nome:'Whey – Amazon (sem 1)',  cat:'mercado',    who:'Zeca'},
+  {id:'s17',week:'w2',date:'2026-05-04',valor:51,    nome:'Whey – Amazon (sem 2)',  cat:'mercado',    who:'Zeca'},
+  {id:'s18',week:'w3',date:'2026-05-04',valor:51,    nome:'Whey – Amazon (sem 3)',  cat:'mercado',    who:'Zeca'},
+  {id:'s19',week:'w4',date:'2026-05-04',valor:51,    nome:'Whey – Amazon (sem 4)',  cat:'mercado',    who:'Zeca'},
+  {id:'s20',week:'w2',date:'2026-05-11',valor:27.18, nome:'Guará – Supermercado',   cat:'mercado',    who:'Zeca'},
+  {id:'s21',week:'w2',date:'2026-05-11',valor:22.19, nome:'São Luiz – Mercado',     cat:'mercado',    who:'Nico'},
+  {id:'s22',week:'w2',date:'2026-05-15',valor:80.95, nome:'Guará – Supermercado',   cat:'mercado',    who:'Zeca'},
+  {id:'s23',week:'w2',date:'2026-05-16',valor:270,   nome:'São Luiz – Mercado',     cat:'mercado',    who:'Zeca'},
+  {id:'s24',week:'w3',date:'2026-05-20',valor:162.55,nome:'São Luiz – Mercado',     cat:'mercado',    who:'Nico'},
+  {id:'s25',week:'w3',date:'2026-05-23',valor:33.96, nome:'Mini Do Povo',           cat:'mercado',    who:'Nico'},
+  {id:'s26',week:'w3',date:'2026-05-23',valor:57.81, nome:'Mini Do Povo',           cat:'mercado',    who:'Zeca'},
+  {id:'s27',week:'w3',date:'2026-05-24',valor:100.78,nome:'Mini Do Povo',           cat:'mercado',    who:'Zeca'},
+  {id:'s28',week:'w4',date:'2026-05-25',valor:19.99, nome:'Mini Do Povo',           cat:'mercado',    who:'Zeca'},
+  {id:'s29',week:'w3',date:'2026-05-23',valor:111.56,nome:'De Bem com a Vida',      cat:'mercado',    who:'Zeca'},
+  {id:'s30',week:'w4',date:'2026-05-28',valor:43.17, nome:'Mini Do Povo',           cat:'mercado',    who:'Nico'},
+  {id:'s31',week:'w1',date:'2026-05-05',valor:176.31,nome:'Gasolina',               cat:'transporte', who:'Nico'},
+  {id:'s32',week:'w1',date:'2026-05-05',valor:13,    nome:'Estacionamento RioMar',  cat:'transporte', who:'Nico'},
+  {id:'s33',week:'w1',date:'2026-05-09',valor:12,    nome:'Estac. Iguatemi',        cat:'transporte', who:'Zeca'},
+  {id:'s34',week:'w1',date:'2026-05-09',valor:13,    nome:'Estacionamento RioMar',  cat:'transporte', who:'Zeca'},
+  {id:'s35',week:'w1',date:'2026-05-09',valor:20.99, nome:'Uber',                   cat:'transporte', who:'Nico'},
+  {id:'s36',week:'w1',date:'2026-05-09',valor:21.98, nome:'Uber',                   cat:'transporte', who:'Nico'},
+  {id:'s37',week:'w1',date:'2026-05-10',valor:12,    nome:'Estac. Iguatemi',        cat:'transporte', who:'Zeca'},
+  {id:'s38',week:'w2',date:'2026-05-15',valor:13,    nome:'Estacionamento RioMar',  cat:'transporte', who:'Zeca'},
+  {id:'s39',week:'w2',date:'2026-05-16',valor:17.97, nome:'Uber',                   cat:'transporte', who:'Nico'},
+  {id:'s40',week:'w3',date:'2026-05-22',valor:24.98, nome:'Uber',                   cat:'transporte', who:'Nico'},
+  {id:'s41',week:'w3',date:'2026-05-24',valor:32.96, nome:'Uber',                   cat:'transporte', who:'Nico'},
+  {id:'s42',week:'w3',date:'2026-05-25',valor:16.98, nome:'Uber',                   cat:'transporte', who:'Nico'},
+  {id:'s43',week:'w3',date:'2026-05-23',valor:24.27, nome:'Uber',                   cat:'transporte', who:'Zeca'},
+  {id:'s44',week:'w3',date:'2026-05-23',valor:18.55, nome:'Uber',                   cat:'transporte', who:'Zeca'},
+  {id:'s45',week:'w3',date:'2026-05-23',valor:17.07, nome:'Uber',                   cat:'transporte', who:'Zeca'},
+  {id:'s46',week:'w3',date:'2026-05-24',valor:9.13,  nome:'Uber',                   cat:'transporte', who:'Zeca'},
+  {id:'s47',week:'w3',date:'2026-05-24',valor:10.06, nome:'Uber',                   cat:'transporte', who:'Zeca'},
+  {id:'s48',week:'w3',date:'2026-05-24',valor:20.97, nome:'Uber',                   cat:'transporte', who:'Zeca'},
+  {id:'s49',week:'w3',date:'2026-05-24',valor:9.88,  nome:'Uber',                   cat:'transporte', who:'Zeca'},
+  {id:'s50',week:'w4',date:'2026-05-25',valor:60,    nome:'Estacionamento Painê',   cat:'transporte', who:'Zeca'},
+  {id:'s51',week:'w4',date:'2026-05-28',valor:159.22,nome:'Gasolina',               cat:'transporte', who:'Nico'},
+  {id:'s52',week:'w1',date:'2026-05-05',valor:29.9,  nome:'Brinquedo Vini – Amazon',cat:'lazer',      who:'Nico'},
+  {id:'s53',week:'w1',date:'2026-05-09',valor:50,    nome:'Ingresso – Cinema',      cat:'lazer',      who:'Zeca'},
+  {id:'s54',week:'w1',date:'2026-05-10',valor:86.64, nome:'Ingresso – Cinema',      cat:'lazer',      who:'Zeca'},
+  {id:'s55',week:'w1',date:'2026-05-10',valor:137,   nome:'Hotel Vini',             cat:'vini',       who:'Nico'},
+  {id:'s56',week:'w3',date:'2026-05-18',valor:196.6, nome:'Ração Vini',             cat:'vini',       who:'Nico'},
+  {id:'s57',week:'w3',date:'2026-05-24',valor:137,   nome:'Hotel Vini',             cat:'vini',       who:'Nico'},
+];
+
+let page = 'semana';
+let activeWeek = 'w4';
+let expenses = [];
+let pendingQueue = [];
+let form = { cat:'', who:'', week:'' };
+
+function defaultCotas() { return { food:650, mercado:500, transporte:160, lazer:300, vini:null }; }
+function loadCotas() { try { return JSON.parse(localStorage.getItem('cotas_v3')||'null')||defaultCotas(); } catch { return defaultCotas(); } }
+function saveCotas(c) { localStorage.setItem('cotas_v3', JSON.stringify(c)); }
+function loadPending() { try { return JSON.parse(localStorage.getItem('pending_v3')||'[]'); } catch { return []; } }
+function savePending() { localStorage.setItem('pending_v3', JSON.stringify(pendingQueue)); }
+
+let cotas = loadCotas();
+
+const fmt = (n) => Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtD = (s) => { try { const [,m,d]=s.split('-'); return `${d}/${m}`; } catch { return s; } };
+const R = (n) => Math.round(n*100)/100;
+
+function catSpent(week, cat) { return expenses.filter(e=>e.week===week&&e.cat===cat).reduce((s,e)=>s+(parseFloat(e.valor)||0),0); }
+function catSaldo(week, cat) { const c=cotas[cat]; if(c===null||c===undefined) return null; return R(c-catSpent(week,cat)); }
+function weekCredit(week) { return Object.keys(CATS).filter(c=>c!=='vini').reduce((s,c)=>{ const sl=catSaldo(week,c); return s+(sl!==null?sl:0); },0); }
+function monthCredit() { return WEEKS.reduce((s,w)=>s+weekCredit(w.id),0); }
+
+function setSyncStatus(state, label) {
+  document.getElementById('syncDot').className = 'sync-dot '+state;
+  document.getElementById('syncLabel').textContent = label;
+}
+
+async function fetchFromSheets() {
+  setSyncStatus('loading','Atualizando…');
+  try {
+    const r = await fetch(SHEETS_URL+'?t='+Date.now());
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    const rows = data.filter(row=>row.id&&row.valor);
+    if (rows.length > 0) {
+      expenses = rows.map(row=>({
+        id:String(row.id), week:String(row.semana), date:String(row.data),
+        valor:parseFloat(row.valor)||0, nome:String(row.nome||''),
+        cat:String(row.cat||''), who:String(row.who||''),
+      }));
+      setSyncStatus('ok','Sincronizado'); return true;
+    } else {
+      await seedSheets(); return true;
+    }
+  } catch {
+    setSyncStatus('err','Offline');
+    if (expenses.length===0) expenses = [...SEED_DATA];
+    return false;
+  }
+}
+
+async function seedSheets() {
+  setSyncStatus('loading','Configurando…');
+  for (const exp of SEED_DATA) { try { await postToSheets(exp); } catch {} }
+  expenses = [...SEED_DATA];
+  setSyncStatus('ok','Sincronizado');
+}
+
+async function postToSheets(exp) {
+  await fetch(SHEETS_URL, {
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id:exp.id,semana:exp.week,data:exp.date,valor:exp.valor,nome:exp.nome,cat:exp.cat,who:exp.who})
+  });
+}
+
+async function flushPending() {
+  const still = [];
+  for (const exp of pendingQueue) { try { await postToSheets(exp); } catch { still.push(exp); } }
+  pendingQueue = still; savePending();
+}
+
+async function fetchSilent() {
+  try {
+    const r = await fetch(SHEETS_URL+'?t='+Date.now());
+    if (!r.ok) return null;
+    const data = await r.json();
+    const rows = data.filter(row=>row.id&&row.valor).map(row=>({
+      id:String(row.id),week:String(row.semana),date:String(row.data),
+      valor:parseFloat(row.valor)||0,nome:String(row.nome||''),
+      cat:String(row.cat||''),who:String(row.who||''),
+    }));
+    if (rows.length>0) { setSyncStatus('ok','Sincronizado'); return rows; }
+    return null;
+  } catch { return null; }
+}
+
+function render() {
+  renderWeekStrip();
+  if (page==='semana') renderSemana();
+  else if (page==='mes') renderMes();
+  else renderConfig();
+  document.getElementById('fab').style.display = page==='config'?'none':'flex';
+}
+
+function setPage(p) {
+  page = p;
+  ['Semana','Mes','Config'].forEach(x=>document.getElementById('nav'+x).classList.toggle('active',p===x.toLowerCase()));
+  render();
+}
+
+function renderWeekStrip() {
+  document.getElementById('weekStrip').innerHTML = WEEKS.map(w=>
+    `<button class="week-pill${w.id===activeWeek?' active':''}" onclick="setWeek('${w.id}')">${w.label}</button>`
+  ).join('');
+}
+
+function setWeek(id) { activeWeek=id; render(); }
+
+function renderSemana() {
+  const wkExp = expenses.filter(e=>e.week===activeWeek);
+  const totalGasto = wkExp.reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
+  const creditSem  = weekCredit(activeWeek);
+  const totalCota  = Object.keys(CATS).filter(c=>c!=='vini').reduce((s,c)=>s+(cotas[c]||0),0);
+  const nicoTotal  = wkExp.filter(e=>e.who==='Nico').reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
+  const zecaTotal  = wkExp.filter(e=>e.who==='Zeca').reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
+
+  const catCards = Object.entries(CATS).map(([key,cat])=>{
+    const spent = catSpent(activeWeek,key);
+    const saldo = catSaldo(activeWeek,key);
+    const pct   = cotas[key]>0 ? Math.min(spent/cotas[key]*100,100) : 0;
+    const isVini = key==='vini';
+    return `
+    <div class="cat-card ${cat.cls}${isVini?' vini':''}">
+      <div class="cat-icon-row">
+        <div class="cat-shape">${cat.icon}</div>
+        ${saldo!==null ? `<div class="cat-saldo-badge ${saldo>=0?'pos':'neg'}">${saldo>=0?'+':''}R$ ${fmt(saldo)}</div>` : ''}
+      </div>
+      <div class="cat-name">${cat.name}</div>
+      <div class="cat-spent">R$ ${fmt(spent)}</div>
+      <div class="cat-quota">${isVini?'sem cota':'meta R$ '+fmt(cotas[key]||0)}</div>
+      <div class="cat-progress-bg">
+        <div class="cat-progress-fill" style="width:${pct}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const sorted = [...wkExp].sort((a,b)=>b.date.localeCompare(a.date));
+  const rows = sorted.length ? sorted.map(e=>`
+    <div class="expense-item">
+      <div class="exp-icon" style="background:${CAT_BG[e.cat]||'#f5f5f5'}">${(CATS[e.cat]||CATS.food).icon}</div>
+      <div class="exp-info">
+        <div class="exp-name">${e.nome}</div>
+        <div class="exp-meta">${(CATS[e.cat]||{name:e.cat}).name} · ${fmtD(e.date)}</div>
+      </div>
+      <div class="exp-right">
+        <div class="exp-val">R$ ${fmt(parseFloat(e.valor)||0)}</div>
+        <div class="exp-who ${e.who==='Nico'?'nico':'zeca'}">${e.who}</div>
+      </div>
+    </div>`).join('')
+    : `<div class="empty"><div class="empty-icon">✨</div><div class="empty-txt">Nenhum gasto nesta semana</div></div>`;
+
+  document.getElementById('content').innerHTML = `
+    <div class="balance-wrap">
+      <div class="balance-card">
+        <div class="bal-label">Crédito da semana</div>
+        <div class="bal-amount${creditSem<0?' negative':''}">R$ ${fmt(creditSem)}</div>
+        <div class="bal-row">
+          <div class="bal-stat"><div class="bal-stat-label">Cota total</div><div class="bal-stat-val">R$ ${fmt(totalCota)}</div></div>
+          <div class="bal-stat"><div class="bal-stat-label">Total gasto</div><div class="bal-stat-val">R$ ${fmt(totalGasto)}</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="split-wrap">
+      <div class="split-row">
+        <div class="split-card"><div class="split-name nico">Nico</div><div class="split-amount">R$ ${fmt(nicoTotal)}</div></div>
+        <div class="split-card"><div class="split-name zeca">Zeca</div><div class="split-amount">R$ ${fmt(zecaTotal)}</div></div>
+      </div>
+    </div>
+    <div class="cats-wrap">
+      <div class="section-label">Por categoria</div>
+      <div class="cats-grid">${catCards}</div>
+    </div>
+    <div class="expenses-wrap">
+      <div class="section-label">Lançamentos</div>
+      ${rows}
+    </div>`;
+}
+
+function renderMes() {
+  const all = expenses;
+  const totalGasto = all.reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
+  const nicoTotal  = all.filter(e=>e.who==='Nico').reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
+  const zecaTotal  = all.filter(e=>e.who==='Zeca').reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
+  const credMes    = monthCredit();
+
+  const catRows = Object.entries(CATS).map(([key,cat])=>{
+    const spent = all.filter(e=>e.cat===key).reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
+    const totalCota = cotas[key] ? cotas[key]*WEEKS.length : null;
+    const pct  = totalCota ? Math.min(spent/totalCota*100,100) : 0;
+    const cred = WEEKS.reduce((s,w)=>{ const sl=catSaldo(w.id,key); return s+(sl!==null?sl:0); },0);
+    return `
+    <div class="cat-month-row">
+      <div class="cml-dot" style="background:${cat.color}"></div>
+      <div class="cml-info">
+        <div class="cml-name">${cat.icon} ${cat.name}</div>
+        <div class="cml-bar-wrap"><div class="cml-bar" style="width:${pct}%;background:${cat.color}"></div></div>
+      </div>
+      <div class="cml-right">
+        <div class="cml-val">R$ ${fmt(spent)}</div>
+        ${totalCota!==null
+          ? `<div class="cml-credit ${cred>=0?'pos':'neg'}">${cred>=0?'▲':'▼'} R$ ${fmt(cred)}</div>`
+          : `<div class="cml-credit neu">sem cota</div>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  const weekRows = WEEKS.map(w=>{ const cr=weekCredit(w.id); return `
+    <div class="cat-month-row">
+      <div class="cml-dot" style="background:#8e8e93"></div>
+      <div class="cml-info"><div class="cml-name" style="font-size:12px">${w.label}</div></div>
+      <div class="cml-right">
+        <div class="cml-credit ${cr>=0?'pos':'neg'}" style="font-size:13px">${cr>=0?'+':''}R$ ${fmt(cr)}</div>
+      </div>
+    </div>`; }).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="monthly-wrap">
+      <div class="section-label">Resumo — Maio 2026</div>
+      <div class="month-summary">
+        <div class="mscard"><div class="mscard-label">Total gasto</div><div class="mscard-val">R$ ${fmt(totalGasto)}</div></div>
+        <div class="mscard"><div class="mscard-label">Lançamentos</div><div class="mscard-val">${all.length}</div></div>
+        <div class="mscard nico-card"><div class="mscard-label">Nico pagou</div><div class="mscard-val">R$ ${fmt(nicoTotal)}</div></div>
+        <div class="mscard zeca-card"><div class="mscard-label">Zeca pagou</div><div class="mscard-val">R$ ${fmt(zecaTotal)}</div></div>
+      </div>
+      <div class="credit-card-full">
+        <div class="credit-label">💰 Crédito acumulado no mês</div>
+        <div class="credit-val">${credMes>=0?'+':''}R$ ${fmt(credMes)}</div>
+      </div>
+      <div class="section-label">Por categoria</div>
+      ${catRows}
+      <div class="section-label" style="margin-top:14px">Crédito por semana</div>
+      ${weekRows}
+    </div>`;
+}
+
+function renderConfig() {
+  const catInputs = Object.entries(CATS).map(([key,cat])=>`
+    <div class="settings-row">
+      <div>
+        <div class="sr-label">${cat.icon} ${cat.name}</div>
+        <div class="sr-sub">${key==='vini'?'sem cota semanal':'cota semanal'}</div>
+      </div>
+      <input class="sr-input" id="cota_${key}" type="number"
+        value="${cotas[key]!==null&&cotas[key]!==undefined?cotas[key]:''}"
+        placeholder="${key==='vini'?'—':'0,00'}" step="0.01" inputmode="decimal">
+    </div>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="settings-wrap">
+      <div class="settings-group">
+        <div class="sg-title">Cotas semanais</div>
+        <div class="settings-card">${catInputs}</div>
+        <button class="save-btn" onclick="saveCotas2()">Salvar cotas</button>
+      </div>
+      <div class="settings-group">
+        <div class="sg-title">Sincronização</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div><div class="sr-label">Google Sheets</div><div class="sr-sub">Dados compartilhados entre celulares</div></div>
+            <span style="font-size:12px;color:var(--muted)" id="cfgSync">—</span>
+          </div>
+        </div>
+        <button class="action-btn" onclick="manualSync()">🔄 Sincronizar agora</button>
+      </div>
+      <div class="settings-group">
+        <div class="sg-title">Exportar</div>
+        <button class="action-btn" onclick="exportCSV()">⬇ Exportar CSV — Maio 2026</button>
+      </div>
+    </div>`;
+  const lbl = document.getElementById('syncLabel');
+  const cfg = document.getElementById('cfgSync');
+  if (cfg && lbl) cfg.textContent = lbl.textContent;
+}
+
+function saveCotas2() {
+  const c = {...cotas};
+  Object.keys(CATS).forEach(k=>{ const el=document.getElementById('cota_'+k); const v=parseFloat(el.value); c[k]=isNaN(v)?null:v; });
+  cotas=c; saveCotas(c); toast('✔ Cotas salvas'); render();
+}
+
+async function manualSync() {
+  toast('🔄 Sincronizando…');
+  await flushPending(); await fetchFromSheets(); render(); toast('✔ Atualizado!');
+}
+
+function openModal() {
+  form = {cat:'',who:'',week:activeWeek};
+  document.getElementById('mValor').value='';
+  document.getElementById('mNome').value='';
+  document.querySelectorAll('#mCatChips .chip').forEach(c=>c.classList.remove('on'));
+  document.getElementById('chipNico').className='chip';
+  document.getElementById('chipZeca').className='chip';
+  document.getElementById('mWeekChips').innerHTML = WEEKS.map(w=>
+    `<button class="chip${w.id===activeWeek?' on':''}" onclick="selWeekM('${w.id}',this)">${w.label}</button>`
+  ).join('');
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('mValor').focus(),300);
+}
+
+function bgClose(e) { if(e.target===document.getElementById('overlay')) document.getElementById('overlay').classList.remove('open'); }
+function selCat(c) { form.cat=c; document.querySelectorAll('#mCatChips .chip').forEach(el=>el.classList.remove('on')); event.target.classList.add('on'); }
+function selWho(w) { form.who=w; document.getElementById('chipNico').className='chip'+(w==='Nico'?' on nico':''); document.getElementById('chipZeca').className='chip'+(w==='Zeca'?' on zeca':''); }
+function selWeekM(id,el) { form.week=id; document.querySelectorAll('#mWeekChips .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); }
+
+async function addExpense() {
+  const valor=parseFloat(document.getElementById('mValor').value);
+  const nome=document.getElementById('mNome').value.trim();
+  if(!valor||valor<=0){toast('⚠ Informe o valor');return;}
+  if(!nome){toast('⚠ Informe o estabelecimento');return;}
+  if(!form.cat){toast('⚠ Selecione a categoria');return;}
+  if(!form.who){toast('⚠ Selecione quem pagou');return;}
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true; btn.textContent='Salvando…';
+  const exp={id:'u'+Date.now(),week:form.week||activeWeek,date:new Date().toISOString().split('T')[0],valor,nome,cat:form.cat,who:form.who};
+  expenses.push(exp);
+  document.getElementById('overlay').classList.remove('open');
+  activeWeek=exp.week; render();
+  setSyncStatus('loading','Salvando…');
+  try { await postToSheets(exp); setSyncStatus('ok','Sincronizado'); toast('✔ Gasto salvo!'); }
+  catch { pendingQueue.push(exp); savePending(); setSyncStatus('err','Pendente'); toast('💾 Salvo — sync pendente'); }
+  btn.disabled=false; btn.textContent='Salvar';
+}
+
+function exportCSV() {
+  const catNames={food:'Food',mercado:'Mercado',transporte:'Transporte',lazer:'Lazer',vini:'Vini'};
+  const wkLabels=Object.fromEntries(WEEKS.map(w=>[w.id,w.label]));
+  const rows=[['Semana','Data','Valor','Estabelecimento','Categoria','Quem Pagou']];
+  [...expenses].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>rows.push([wkLabels[e.week]||e.week,e.date,parseFloat(e.valor).toFixed(2).replace('.',','),e.nome,catNames[e.cat]||e.cat,e.who]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='gastos_maio_2026.csv'; a.click(); toast('✔ CSV exportado!');
+}
+
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+async function init() {
+  pendingQueue=loadPending(); cotas=loadCotas();
+  expenses=[...SEED_DATA];
+  const weeksWithData=WEEKS.filter(w=>expenses.some(e=>e.week===w.id));
+  if(weeksWithData.length) activeWeek=weeksWithData[weeksWithData.length-1].id;
+  document.getElementById('loadingScreen').style.display='none';
+  setSyncStatus('loading','Atualizando…');
+  render();
+  setTimeout(async()=>{
+    const ok=await fetchFromSheets();
+    if(ok&&pendingQueue.length>0){await flushPending();}
+    render();
+    setInterval(async()=>{
+      if(pendingQueue.length>0) await flushPending();
+      const rows=await fetchSilent();
+      if(rows){expenses=rows;render();}
+    },60000);
+  },100);
+}
+
+init();
+</script>
+</body>
+</html>
