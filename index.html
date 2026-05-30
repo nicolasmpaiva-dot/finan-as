@@ -339,11 +339,34 @@ const SEED = [
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let page = 'semana';
-let activeWeek = 'w4';
 let expenses = [];
 let form = {cat:'',who:'',week:''};
 let cotas = loadCotas();
 let saving = false;
+
+// Load dynamic config (month, year, weeks)
+function loadConfig() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('app_config')||'null');
+    if (saved) return saved;
+  } catch {}
+  return {
+    monthIndex: 4, // Maio
+    year: 2026,
+    weeks: [
+      {id:'w1',label:'04/05 – 10/05'},
+      {id:'w2',label:'11/05 – 17/05'},
+      {id:'w3',label:'18/05 – 24/05'},
+      {id:'w4',label:'25/05 – 31/05'},
+    ]
+  };
+}
+
+let appConfig = loadConfig();
+let currentMonthIndex = appConfig.monthIndex;
+let currentYear = appConfig.year;
+let currentWeeks = appConfig.weeks;
+let activeWeek = currentWeeks[currentWeeks.length-1].id;
 
 function defaultCotas() { return {food:650,mercado:500,transporte:160,lazer:300,vini:null}; }
 function loadCotas() { try { return JSON.parse(localStorage.getItem('cotas_v4')||'null')||defaultCotas(); } catch { return defaultCotas(); } }
@@ -356,7 +379,7 @@ const R = n => Math.round(n*100)/100;
 function catSpent(week,cat) { return expenses.filter(e=>e.week===week&&e.cat===cat).reduce((s,e)=>s+(parseFloat(e.valor)||0),0); }
 function catSaldo(week,cat) { const c=cotas[cat]; if(c===null||c===undefined) return null; return R(c-catSpent(week,cat)); }
 function weekCredit(week) { return Object.keys(CATS).filter(c=>c!=='vini').reduce((s,c)=>{const sl=catSaldo(week,c);return s+(sl!==null?sl:0);},0); }
-function monthCredit() { return WEEKS.reduce((s,w)=>s+weekCredit(w.id),0); }
+function monthCredit() { return currentWeeks.reduce((s,w)=>s+weekCredit(w.id),0); }
 
 // ── JSONBIN API ───────────────────────────────────────────────────────────────
 function setSyncStatus(state,label) {
@@ -444,7 +467,7 @@ function setPage(p) {
 }
 
 function renderWeekStrip() {
-  document.getElementById('weekStrip').innerHTML = WEEKS.map(w=>
+  document.getElementById('weekStrip').innerHTML = currentWeeks.map(w=>
     `<button class="week-pill${w.id===activeWeek?' active':''}" onclick="setWeek('${w.id}')">${w.label}</button>`
   ).join('');
 }
@@ -511,21 +534,21 @@ function renderMes() {
     const spent=all.filter(e=>e.cat===key).reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
     const totalCota=cotas[key]?cotas[key]*WEEKS.length:null;
     const pct=totalCota?Math.min(spent/totalCota*100,100):0;
-    const cred=WEEKS.reduce((s,w)=>{const sl=catSaldo(w.id,key);return s+(sl!==null?sl:0);},0);
+    const cred=currentWeeks.reduce((s,w)=>{const sl=catSaldo(w.id,key);return s+(sl!==null?sl:0);},0);
     return `<div class="cat-month-row">
       <div class="cml-dot" style="background:${cat.color}"></div>
       <div class="cml-info"><div class="cml-name">${cat.icon} ${cat.name}</div><div class="cml-bar-wrap"><div class="cml-bar" style="width:${pct}%;background:${cat.color}"></div></div></div>
       <div class="cml-right"><div class="cml-val">R$ ${fmt(spent)}</div>${totalCota!==null?`<div class="cml-credit ${cred>=0?'pos':'neg'}">${cred>=0?'▲':'▼'} R$ ${fmt(cred)}</div>`:`<div class="cml-credit neu">sem cota</div>`}</div>
     </div>`;
   }).join('');
-  const weekRows=WEEKS.map(w=>{const cr=weekCredit(w.id);return`<div class="cat-month-row">
+  const weekRows=currentWeeks.map(w=>{const cr=weekCredit(w.id);return`<div class="cat-month-row">
     <div class="cml-dot" style="background:#8e8e93"></div>
     <div class="cml-info"><div class="cml-name" style="font-size:12px">${w.label}</div></div>
     <div class="cml-right"><div class="cml-credit ${cr>=0?'pos':'neg'}" style="font-size:13px">${cr>=0?'+':''}R$ ${fmt(cr)}</div></div>
   </div>`;}).join('');
 
   document.getElementById('content').innerHTML=`<div class="monthly-wrap">
-    <div class="section-label">Resumo — Maio 2026</div>
+    <div class="section-label">Resumo — ${['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][currentMonthIndex]} ${currentYear}</div>
     <div class="month-summary">
       <div class="mscard"><div class="mscard-label">Total gasto</div><div class="mscard-val">R$ ${fmt(totalGasto)}</div></div>
       <div class="mscard"><div class="mscard-label">Lançamentos</div><div class="mscard-val">${all.length}</div></div>
@@ -544,24 +567,104 @@ function renderConfig() {
       <div><div class="sr-label">${cat.icon} ${cat.name}</div><div class="sr-sub">${key==='vini'?'sem cota semanal':'cota semanal'}</div></div>
       <input class="sr-input" id="cota_${key}" type="number" value="${cotas[key]!==null&&cotas[key]!==undefined?cotas[key]:''}" placeholder="${key==='vini'?'—':'0,00'}" step="0.01" inputmode="decimal">
     </div>`).join('');
+
+  const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const weekRows = currentWeeks.map((w,i)=>`
+    <div class="settings-row">
+      <div><div class="sr-label">Semana ${i+1}</div></div>
+      <input class="sr-input" id="week_${i}" type="text" value="${w.label}" placeholder="DD/MM – DD/MM" style="width:130px;font-size:12px">
+    </div>`).join('');
+
+  const monthOptions = monthNames.map((m,i)=>`<option value="${i}" ${i===currentMonthIndex?'selected':''}>${m}</option>`).join('');
+  const yearOptions = [2025,2026,2027].map(y=>`<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`).join('');
+
   document.getElementById('content').innerHTML=`<div class="settings-wrap">
+
     <div class="settings-group">
-      <div class="sg-title">Cotas semanais</div>
+      <div class="sg-title">Mês atual</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="sr-label">Mês</div>
+          <select id="selMonth" class="sr-input" style="width:120px">${monthOptions}</select>
+        </div>
+        <div class="settings-row">
+          <div class="sr-label">Ano</div>
+          <select id="selYear" class="sr-input" style="width:90px">${yearOptions}</select>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="sg-title">Semanas do mês</div>
+      <div class="settings-card">${weekRows}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;padding:0 2px">Use o formato DD/MM – DD/MM. Adicione ou remova semanas conforme o calendário do mês.</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="action-btn" style="margin-top:0" onclick="addWeekRow()">+ Semana</button>
+        <button class="action-btn" style="margin-top:0" onclick="removeWeekRow()">− Remover</button>
+      </div>
+      <button class="save-btn" onclick="saveWeeks()">Salvar mês e semanas</button>
+    </div>
+
+    <div class="settings-group">
+      <div class="sg-title">Cotas semanais por categoria</div>
       <div class="settings-card">${catInputs}</div>
       <button class="save-btn" onclick="saveCotas2()">Salvar cotas</button>
     </div>
+
     <div class="settings-group">
       <div class="sg-title">Sincronização</div>
       <div class="settings-card">
-        <div class="settings-row"><div><div class="sr-label">JSONBin</div><div class="sr-sub">Dados em tempo real entre celulares</div></div><span style="font-size:12px;color:var(--muted)">${document.getElementById('syncLabel').textContent}</span></div>
+        <div class="settings-row"><div><div class="sr-label">JSONBin</div><div class="sr-sub">Tempo real entre celulares</div></div><span style="font-size:12px;color:var(--muted)">${document.getElementById('syncLabel').textContent}</span></div>
       </div>
       <button class="action-btn" onclick="manualSync()">🔄 Sincronizar agora</button>
     </div>
+
     <div class="settings-group">
       <div class="sg-title">Exportar</div>
-      <button class="action-btn" onclick="exportCSV()">⬇ Exportar CSV — Maio 2026</button>
+      <button class="action-btn" onclick="exportCSV()">⬇ Exportar CSV — ${monthNames[currentMonthIndex]} ${currentYear}</button>
     </div>
   </div>`;
+}
+
+function addWeekRow() {
+  currentWeeks.push({id:'w'+(currentWeeks.length+1),label:''});
+  render();
+  // scroll to weeks section
+}
+
+function removeWeekRow() {
+  if(currentWeeks.length>1) { currentWeeks.pop(); render(); }
+}
+
+function saveWeeks() {
+  const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  // Read month/year
+  const selM = document.getElementById('selMonth');
+  const selY = document.getElementById('selYear');
+  if(selM) currentMonthIndex = parseInt(selM.value);
+  if(selY) currentYear = parseInt(selY.value);
+
+  // Read week labels
+  const newWeeks = [];
+  currentWeeks.forEach((w,i)=>{
+    const el = document.getElementById('week_'+i);
+    if(el && el.value.trim()) {
+      newWeeks.push({id:'w'+(i+1), label:el.value.trim()});
+    }
+  });
+  if(newWeeks.length===0){toast('⚠ Adicione pelo menos uma semana');return;}
+  currentWeeks = newWeeks;
+  activeWeek = currentWeeks[0].id;
+
+  // Save to localStorage
+  localStorage.setItem('app_config', JSON.stringify({
+    monthIndex: currentMonthIndex,
+    year: currentYear,
+    weeks: currentWeeks
+  }));
+
+  toast('✔ Mês e semanas salvos!');
+  render();
 }
 
 function saveCotas2() {
@@ -578,7 +681,7 @@ function openModal() {
   document.querySelectorAll('#mCatChips .chip').forEach(c=>c.classList.remove('on'));
   document.getElementById('chipNico').className='chip';
   document.getElementById('chipZeca').className='chip';
-  document.getElementById('mWeekChips').innerHTML=WEEKS.map(w=>
+  document.getElementById('mWeekChips').innerHTML=currentWeeks.map(w=>
     `<button class="chip${w.id===activeWeek?' on':''}" onclick="selWeekM('${w.id}',this)">${w.label}</button>`
   ).join('');
   document.getElementById('overlay').classList.add('open');
@@ -610,13 +713,14 @@ async function addExpense() {
 // ── EXPORT ────────────────────────────────────────────────────────────────────
 function exportCSV() {
   const catNames={food:'Food',mercado:'Mercado',transporte:'Transporte',lazer:'Lazer',vini:'Vini'};
-  const wkLabels=Object.fromEntries(WEEKS.map(w=>[w.id,w.label]));
+  const wkLabels=Object.fromEntries(currentWeeks.map(w=>[w.id,w.label]));
   const rows=[['Semana','Data','Valor','Estabelecimento','Categoria','Quem Pagou']];
   [...expenses].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>rows.push([wkLabels[e.week]||e.week,e.date,parseFloat(e.valor).toFixed(2).replace('.',','),e.nome,catNames[e.cat]||e.cat,e.who]));
   const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
-  a.download='gastos_maio_2026.csv'; a.click(); toast('✔ CSV exportado!');
+  const monthNames2=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  a.download=`gastos_${monthNames2[currentMonthIndex]}_${currentYear}.csv`; a.click(); toast('✔ CSV exportado!');
 }
 
 function toast(msg) {
