@@ -228,6 +228,7 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
     <div class="modal-title">Novo gasto</div>
     <div class="fg"><label class="fl">Valor (R$)</label><input class="fi big" type="number" id="mValor" placeholder="0,00" inputmode="decimal" step="0.01"></div>
     <div class="fg"><label class="fl">Estabelecimento</label><input class="fi" type="text" id="mNome" placeholder="Ex: São Luiz, Uber…"></div>
+    <div class="fg"><label class="fl">Data do gasto</label><input class="fi" type="date" id="mData" style="color:var(--ink)"></div>
     <div class="fg"><label class="fl">Semana</label><div class="chips" id="mWeekChips"></div></div>
     <div class="fg">
       <label class="fl">Categoria</label>
@@ -237,6 +238,7 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
         <button class="chip" onclick="selCat('transporte')">🚗 Transporte</button>
         <button class="chip" onclick="selCat('lazer')">🎉 Lazer</button>
         <button class="chip" onclick="selCat('vini')">🐾 Vini</button>
+        <button class="chip" onclick="selCat('extra')">📌 Extra</button>
       </div>
     </div>
     <div class="fg">
@@ -272,9 +274,11 @@ const CATS = {
   transporte: {name:'Transporte',icon:'🚗',cls:'transporte',color:'#2563a8'},
   lazer:      {name:'Lazer',     icon:'🎉',cls:'lazer',     color:'#6d3fc0'},
   vini:       {name:'Vini',      icon:'🐾',cls:'vini-cat',  color:'#a07c1a'},
+  extra:      {name:'Extra',     icon:'📌',cls:'extra-cat', color:'#6b7280'},
 };
+const NO_COTA_CATS = ['vini','extra']; // categorias sem cota, não entram no total gasto
 
-const CAT_BG = {food:'#fef3e2',mercado:'#e8f5ec',transporte:'#e8f0fb',lazer:'#f0eafa',vini:'#fef9e7'};
+const CAT_BG = {food:'#fef3e2',mercado:'#e8f5ec',transporte:'#e8f0fb',lazer:'#f0eafa',vini:'#fef9e7',extra:'#f3f4f6'};
 
 const SEED = [
   {id:'s1',week:'w1',date:'2026-05-05',valor:45.4,nome:'Track & Field',cat:'food',who:'Zeca'},
@@ -378,7 +382,7 @@ const fmtD = s => { try { const[,m,d]=s.split('-'); return`${d}/${m}`; } catch{r
 const R = n => Math.round(n*100)/100;
 function catSpent(week,cat) { return expenses.filter(e=>e.week===week&&e.cat===cat).reduce((s,e)=>s+(parseFloat(e.valor)||0),0); }
 function catSaldo(week,cat) { const c=cotas[cat]; if(c===null||c===undefined) return null; return R(c-catSpent(week,cat)); }
-function weekCredit(week) { return Object.keys(CATS).filter(c=>c!=='vini').reduce((s,c)=>{const sl=catSaldo(week,c);return s+(sl!==null?sl:0);},0); }
+function weekCredit(week) { return Object.keys(CATS).filter(c=>!NO_COTA_CATS.includes(c)).reduce((s,c)=>{const sl=catSaldo(week,c);return s+(sl!==null?sl:0);},0); }
 function monthCredit() { return currentWeeks.reduce((s,w)=>s+weekCredit(w.id),0); }
 
 // ── JSONBIN API ───────────────────────────────────────────────────────────────
@@ -462,6 +466,7 @@ function render() {
 
 function setPage(p) {
   page=p;
+  detailCat=null;
   ['Semana','Mes','Config'].forEach(x=>document.getElementById('nav'+x).classList.toggle('active',p===x.toLowerCase()));
   render();
 }
@@ -476,9 +481,9 @@ function setWeek(id) { activeWeek=id; render(); }
 
 function renderSemana() {
   const wkExp = expenses.filter(e=>e.week===activeWeek);
-  const totalGasto = wkExp.reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
+  const totalGasto = wkExp.filter(e=>!NO_COTA_CATS.includes(e.cat)).reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
   const creditSem  = weekCredit(activeWeek);
-  const totalCota  = Object.keys(CATS).filter(c=>c!=='vini').reduce((s,c)=>s+(cotas[c]||0),0);
+  const totalCota  = Object.keys(CATS).filter(c=>!NO_COTA_CATS.includes(c)).reduce((s,c)=>s+(cotas[c]||0),0);
   const nicoTotal  = wkExp.filter(e=>e.who==='Nico').reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
   const zecaTotal  = wkExp.filter(e=>e.who==='Zeca').reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
 
@@ -486,14 +491,14 @@ function renderSemana() {
     const spent=catSpent(activeWeek,key);
     const saldo=catSaldo(activeWeek,key);
     const pct=cotas[key]>0?Math.min(spent/cotas[key]*100,100):0;
-    return `<div class="cat-card ${cat.cls}${key==='vini'?' vini':''}">
+    return `<div class="cat-card ${cat.cls}">
       <div class="cat-icon-row">
         <div class="cat-shape">${cat.icon}</div>
         ${saldo!==null?`<div class="cat-saldo-badge ${saldo>=0?'pos':'neg'}">${saldo>=0?'+':''}R$ ${fmt(saldo)}</div>`:''}
       </div>
       <div class="cat-name">${cat.name}</div>
       <div class="cat-spent">R$ ${fmt(spent)}</div>
-      <div class="cat-quota">${key==='vini'?'sem cota':'meta R$ '+fmt(cotas[key]||0)}</div>
+      <div class="cat-quota">${NO_COTA_CATS.includes(key)?'sem cota':'meta R$ '+fmt(cotas[key]||0)}</div>
       <div class="cat-progress-bg"><div class="cat-progress-fill" style="width:${pct}%"></div></div>
     </div>`;
   }).join('');
@@ -524,7 +529,10 @@ function renderSemana() {
     <div class="expenses-wrap"><div class="section-label">Lançamentos</div>${rows}</div>`;
 }
 
+let detailCat = null; // null = visão geral, 'food' = detalhe de categoria
+
 function renderMes() {
+  if (detailCat) { renderCatDetail(detailCat); return; }
   const all=expenses;
   const totalGasto=all.reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
   const nicoTotal=all.filter(e=>e.who==='Nico').reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
@@ -535,10 +543,10 @@ function renderMes() {
     const totalCota=cotas[key]?cotas[key]*WEEKS.length:null;
     const pct=totalCota?Math.min(spent/totalCota*100,100):0;
     const cred=currentWeeks.reduce((s,w)=>{const sl=catSaldo(w.id,key);return s+(sl!==null?sl:0);},0);
-    return `<div class="cat-month-row">
+    return `<div class="cat-month-row" onclick="openCatDetail('${key}')" style="cursor:pointer">
       <div class="cml-dot" style="background:${cat.color}"></div>
       <div class="cml-info"><div class="cml-name">${cat.icon} ${cat.name}</div><div class="cml-bar-wrap"><div class="cml-bar" style="width:${pct}%;background:${cat.color}"></div></div></div>
-      <div class="cml-right"><div class="cml-val">R$ ${fmt(spent)}</div>${totalCota!==null?`<div class="cml-credit ${cred>=0?'pos':'neg'}">${cred>=0?'▲':'▼'} R$ ${fmt(cred)}</div>`:`<div class="cml-credit neu">sem cota</div>`}</div>
+      <div class="cml-right"><div class="cml-val">R$ ${fmt(spent)}</div>${totalCota!==null?`<div class="cml-credit ${cred>=0?'pos':'neg'}">${cred>=0?'▲':'▼'} R$ ${fmt(cred)}</div>`:`<div class="cml-credit neu">sem cota</div>`}<div style="font-size:10px;color:var(--dim);margin-top:2px">ver gastos ›</div></div>
     </div>`;
   }).join('');
   const weekRows=currentWeeks.map(w=>{const cr=weekCredit(w.id);return`<div class="cat-month-row">
@@ -681,6 +689,7 @@ function openModal() {
   document.querySelectorAll('#mCatChips .chip').forEach(c=>c.classList.remove('on'));
   document.getElementById('chipNico').className='chip';
   document.getElementById('chipZeca').className='chip';
+  document.getElementById('mData').value=new Date().toISOString().split('T')[0];
   document.getElementById('mWeekChips').innerHTML=currentWeeks.map(w=>
     `<button class="chip${w.id===activeWeek?' on':''}" onclick="selWeekM('${w.id}',this)">${w.label}</button>`
   ).join('');
@@ -703,12 +712,69 @@ async function addExpense() {
   saving=true;
   const btn=document.getElementById('submitBtn');
   btn.disabled=true; btn.textContent='Salvando…';
-  const exp={id:'u'+Date.now(),week:form.week||activeWeek,date:new Date().toISOString().split('T')[0],valor,nome,cat:form.cat,who:form.who};
+  const dateInput = document.getElementById('mData').value;
+  const expDate = dateInput || new Date().toISOString().split('T')[0];
+  const exp={id:'u'+Date.now(),week:form.week||activeWeek,date:expDate,valor,nome,cat:form.cat,who:form.who};
   document.getElementById('overlay').classList.remove('open');
   activeWeek=exp.week;
   await saveExpense(exp);
   saving=false; btn.disabled=false; btn.textContent='Salvar';
 }
+
+// ── CAT DETAIL ───────────────────────────────────────────────────────────────
+function openCatDetail(cat) { detailCat=cat; renderMes(); }
+
+function renderCatDetail(catKey) {
+  const cat = CATS[catKey];
+  const catExp = expenses.filter(e=>e.cat===catKey).sort((a,b)=>a.date.localeCompare(b.date));
+  const total = catExp.reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
+  const cota = cotas[catKey];
+  const totalCota = cota ? cota * currentWeeks.length : null;
+  const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  // Group by week
+  const byWeek = currentWeeks.map(w=>({
+    week: w,
+    exps: catExp.filter(e=>e.week===w.id)
+  })).filter(g=>g.exps.length>0);
+
+  const weekSections = byWeek.map(g=>{
+    const wTotal = g.exps.reduce((s,e)=>s+(parseFloat(e.valor)||0),0);
+    const rows = g.exps.map(e=>`
+      <div class="expense-item">
+        <div class="exp-icon" style="background:${CAT_BG[catKey]||'#f5f5f5'}">${cat.icon}</div>
+        <div class="exp-info"><div class="exp-name">${e.nome}</div><div class="exp-meta">${fmtD(e.date)} · ${e.who}</div></div>
+        <div class="exp-right"><div class="exp-val">R$ ${fmt(parseFloat(e.valor)||0)}</div></div>
+      </div>`).join('');
+    return `
+      <div class="section-label" style="margin-top:14px">${g.week.label} <span style="font-weight:400;color:var(--muted)">— R$ ${fmt(wTotal)}</span></div>
+      ${rows}`;
+  }).join('');
+
+  const empty = catExp.length===0 ? `<div class="empty"><div class="empty-icon">${cat.icon}</div><div class="empty-txt">Nenhum gasto em ${monthNames[currentMonthIndex]}</div></div>` : '';
+
+  document.getElementById('content').innerHTML=`
+    <div class="monthly-wrap">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <button onclick="closeCatDetail()" style="background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;color:var(--ink)">← Voltar</button>
+        <div style="font-size:16px;font-weight:700">${cat.icon} ${cat.name}</div>
+      </div>
+      <div class="month-summary" style="margin-bottom:12px">
+        <div class="mscard"><div class="mscard-label">Total gasto</div><div class="mscard-val">R$ ${fmt(total)}</div></div>
+        <div class="mscard"><div class="mscard-label">Lançamentos</div><div class="mscard-val">${catExp.length}</div></div>
+        ${totalCota!==null?`
+        <div class="mscard"><div class="mscard-label">Cota mensal</div><div class="mscard-val">R$ ${fmt(totalCota)}</div></div>
+        <div class="mscard" style="border-left:3px solid ${total<=totalCota?'var(--green)':'var(--red)'}">
+          <div class="mscard-label">Saldo</div>
+          <div class="mscard-val" style="color:${total<=totalCota?'var(--green)':'var(--red)'}">${total<=totalCota?'+':''}R$ ${fmt(totalCota-total)}</div>
+        </div>`:''}
+      </div>
+      ${empty}
+      ${weekSections}
+    </div>`;
+}
+
+function closeCatDetail() { detailCat=null; renderMes(); }
 
 // ── EXPORT ────────────────────────────────────────────────────────────────────
 function exportCSV() {
@@ -732,13 +798,28 @@ function toast(msg) {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function init() {
   cotas=loadCotas();
-  // Mostra seed imediatamente
-  expenses=[...SEED];
-  document.getElementById('loadingScreen').style.display='none';
   setSyncStatus('loading','Carregando…');
-  render();
-  // Carrega do JSONBin em background
-  await loadFromBin();
+  // Carrega do JSONBin PRIMEIRO — seed só como fallback se falhar
+  try {
+    const exps = await fetchBin();
+    if (exps && exps.length > 0) {
+      expenses = exps;
+      setSyncStatus('ok','Sincronizado');
+    } else {
+      // Bin vazio — popular com seed
+      expenses = [...SEED];
+      await putBin(expenses);
+      setSyncStatus('ok','Sincronizado');
+    }
+  } catch {
+    // Sem internet — usa seed como fallback
+    expenses = [...SEED];
+    setSyncStatus('err','Offline');
+  }
+  document.getElementById('loadingScreen').style.display='none';
+  // Semana ativa = última com dados
+  const weeksWithData = currentWeeks.filter(w=>expenses.some(e=>e.week===w.id));
+  if(weeksWithData.length) activeWeek=weeksWithData[weeksWithData.length-1].id;
   render();
   // Auto-sync a cada 30s
   setInterval(async()=>{
