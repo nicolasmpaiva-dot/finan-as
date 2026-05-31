@@ -514,7 +514,7 @@ function renderSemana() {
 
   document.getElementById('content').innerHTML=`
     <div class="balance-wrap"><div class="balance-card">
-      <div class="bal-label">Crédito da semana</div>
+      <div class="bal-label">Crédito de cotas da semana</div>
       <div class="bal-amount${creditSem<0?' negative':''}">R$ ${fmt(creditSem)}</div>
       <div class="bal-row">
         <div class="bal-stat"><div class="bal-stat-label">Cota total</div><div class="bal-stat-val">R$ ${fmt(totalCota)}</div></div>
@@ -563,7 +563,7 @@ function renderMes() {
       <div class="mscard nico-card"><div class="mscard-label">Nico pagou</div><div class="mscard-val">R$ ${fmt(nicoTotal)}</div></div>
       <div class="mscard zeca-card"><div class="mscard-label">Zeca pagou</div><div class="mscard-val">R$ ${fmt(zecaTotal)}</div></div>
     </div>
-    <div class="credit-card-full"><div class="credit-label">💰 Crédito acumulado no mês</div><div class="credit-val">${credMes>=0?'+':''}R$ ${fmt(credMes)}</div></div>
+    <div class="credit-card-full"><div class="credit-label">💰 Crédito de cotas acumulado no mês</div><div class="credit-val">${credMes>=0?'+':''}R$ ${fmt(credMes)}</div></div>
     <div class="section-label">Por categoria</div>${catRows}
     <div class="section-label" style="margin-top:14px">Crédito por semana</div>${weekRows}
   </div>`;
