@@ -620,6 +620,16 @@ function renderConfig() {
     </div>
 
     <div class="settings-group">
+      <div class="sg-title">Virada de mês</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div><div class="sr-label">Zerar dados</div><div class="sr-sub">Apaga todos os gastos e começa o mês do zero</div></div>
+        </div>
+      </div>
+      <button class="action-btn danger" onclick="virarMes()" style="border-color:#fcc;color:var(--red);margin-top:8px">🗓 Virar mês</button>
+    </div>
+
+    <div class="settings-group">
       <div class="sg-title">Sincronização</div>
       <div class="settings-card">
         <div class="settings-row"><div><div class="sr-label">JSONBin</div><div class="sr-sub">Tempo real entre celulares</div></div><span style="font-size:12px;color:var(--muted)">${document.getElementById('syncLabel').textContent}</span></div>
@@ -775,6 +785,25 @@ function renderCatDetail(catKey) {
 }
 
 function closeCatDetail() { detailCat=null; renderMes(); }
+
+// ── VIRAR MÊS ────────────────────────────────────────────────────────────────
+async function virarMes() {
+  const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const confirm1 = window.confirm(`Isso vai apagar todos os gastos de ${monthNames[currentMonthIndex]} ${currentYear} e começar do zero.\n\nTem certeza?`);
+  if (!confirm1) return;
+
+  setSyncStatus('loading','Zerando…');
+  try {
+    await putBin([]);
+    expenses = [];
+    setSyncStatus('ok','Pronto');
+    toast('✔ Dados zerados! Configure as semanas do novo mês.');
+    setPage('config');
+  } catch {
+    setSyncStatus('err','Erro');
+    toast('⚠ Erro ao zerar — tente novamente');
+  }
+}
 
 // ── EXPORT ────────────────────────────────────────────────────────────────────
 function exportCSV() {
